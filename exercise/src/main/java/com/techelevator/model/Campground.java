@@ -9,6 +9,18 @@ public class Campground {
     private int openToMonth;
     private double dailyFee;
 
+    public Campground(int campgroundId, int parkId, String name, int openFromMonth, int openToMonth, double dailyFee) {
+        this.campgroundId = campgroundId;
+        this.parkId = parkId;
+        this.name = name;
+        this.openFromMonth = openFromMonth;
+        this.openToMonth = openToMonth;
+        this.dailyFee = dailyFee;
+    }
+
+    public Campground() {
+    }
+
     public int getCampgroundId() {
         return campgroundId;
     }

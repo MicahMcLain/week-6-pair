@@ -1,6 +1,10 @@
 package com.techelevator.dao;
 
+import com.techelevator.exception.DaoException;
 import com.techelevator.model.Reservation;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.BadSqlGrammarException;
+import org.springframework.jdbc.CannotGetJdbcConnectionException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 
@@ -14,16 +18,43 @@ public class JdbcReservationDao implements ReservationDao {
         jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
-    @Override 
+    @Override
     public Reservation getReservationById(int id) {
+        Reservation reservation = null;
+        String sql = "SELECT name, reservation_id, site_id, from_date, to_date, create_date FROM reservation WHERE reservation_id = ?;";
+        try {
+            SqlRowSet results = jdbcTemplate.queryForRowSet(sql, id);
+            if (results.next()) {
+                reservation = mapRowToReservation(results);
+            }
+        } catch (CannotGetJdbcConnectionException e) {
+            throw new DaoException("Unable to connect to server or database", e);
+        } catch (BadSqlGrammarException e) {
+            throw new DaoException("SQL syntax error", e);
+        }
+        return reservation;
 
-        return null;
     }
 
     @Override
     public Reservation createReservation(Reservation reservation) {
+        Reservation newReservation = null;
+        String sql = "INSERT INTO reservation (site_id, name, from_date, to_date, create_date) " +
+                "VALUES (?, ?, ?, ?, ?) RETURNING reservation_id;";
+        try {
+            int newReservationId = jdbcTemplate.queryForObject(sql, int.class,
+                    reservation.getSiteId(), reservation.getName(), reservation.getFromDate(),
+                    reservation.getToDate(), reservation.getCreateDate());
 
-        return new Reservation();
+            newReservation = getReservationById(newReservationId);
+        } catch (CannotGetJdbcConnectionException e) {
+            throw new DaoException("Unable to connect to server or database", e);
+        } catch (BadSqlGrammarException e) {
+            throw new DaoException("SQL syntax error", e);
+        } catch (DataIntegrityViolationException e) {
+            throw new DaoException("Data integrity violation", e);
+        }
+        return newReservation;
     }
 
     private Reservation mapRowToReservation(SqlRowSet results) {
